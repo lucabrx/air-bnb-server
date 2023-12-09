@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/air-bnb/config"
+	"github.com/air-bnb/internal/data"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -16,6 +17,7 @@ type application struct {
 	logger *zerolog.Logger
 	wg     sync.WaitGroup
 	config config.AppConfig
+	models data.Models
 }
 
 func main() {
@@ -26,17 +28,18 @@ func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	log.Logger = log.With().Caller().Logger()
 
-	app := application{
-		logger: &log.Logger,
-		config: cfg,
-	}
-
 	db, err := dbConnection(cfg.DBUrl)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to connect to database")
 	}
 	defer db.Close()
 	log.Logger.Info().Msg("Connected to database")
+
+	app := application{
+		logger: &log.Logger,
+		config: cfg,
+		models: data.NewModels(db),
+	}
 
 	err = app.serve()
 	if err != nil {
