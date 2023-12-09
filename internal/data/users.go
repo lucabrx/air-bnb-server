@@ -28,10 +28,10 @@ type User struct {
 	CreatedAt         time.Time `json:"createdAt"`
 	Name              string    `json:"name,omitempty"`
 	Email             string    `json:"email"`
+	Image             string    `json:"image,omitempty"`
 	Password          password  `json:"-"`
 	Activated         bool      `json:"activated"`
 	VerificationToken string    `json:"verificationToken,omitempty"`
-	Image             string    `json:"image,omitempty"`
 	ResetToken        string    `json:"resetToken,omitempty"`
 	ResetEmailToken   string    `json:"resetEmailToken,omitempty"`
 }
@@ -94,8 +94,8 @@ func ValidateUser(v *validator.Validator, user *User) {
 
 func (m UserModel) Insert(user *User) error {
 	query := `
-        INSERT INTO users (name, email, password_hash, activated, image, verification_token) 
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO users (name, email, password_hash, activated, image, verification_token, reset_token, update_email_token) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id, created_at`
 
 	args := []interface{}{
@@ -105,6 +105,8 @@ func (m UserModel) Insert(user *User) error {
 		user.Activated,
 		NewNullString(user.Image),
 		NewNullString(user.VerificationToken),
+		NewNullString(user.ResetToken),
+		NewNullString(user.ResetEmailToken),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -125,7 +127,7 @@ func (m UserModel) Insert(user *User) error {
 func (m UserModel) Get(id int64, email string) (*User, error) {
 	query := `SELECT id, created_at, COALESCE(name, ''), email, COALESCE(image, ''),
        		  COALESCE(password_hash, ''), activated, COALESCE( verification_token, ''),
-       		  COALESCE(reset_token, ''), COALESCE(reset_email_token, '')
+       		  COALESCE(reset_token, ''), COALESCE(update_email_token, '')
 			  FROM users
 			  WHERE id = $1 OR email = $2`
 
@@ -161,7 +163,7 @@ func (m UserModel) Update(user *User) error {
 	query := `
         UPDATE users 
         SET name = $1, email = $2, password_hash = $3, activated = $4, 
-        image = $5, verification_token = $6, reset_token = $7, reset_email_token = $8
+        image = $5, verification_token = $6, reset_token = $7, update_email_token = $8
         WHERE id = $9`
 
 	args := []interface{}{

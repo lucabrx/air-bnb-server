@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/air-bnb/internal/data"
 	"github.com/air-bnb/internal/random"
+	"github.com/air-bnb/internal/validator"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )
@@ -143,8 +144,21 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	v := validator.New()
+	v.Check(input.Name != "", "name", "must be provided")
+	v.Check(len(input.Name) >= 3, "name", "must be at least 3 bytes long")
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
 	user.Name = input.Name
-	user.Image = input.Image
+
+	if input.Image == "" {
+		user.Image = ""
+	} else {
+		user.Image = input.Image
+	}
 
 	err = app.models.Users.Update(user)
 	if err != nil {
