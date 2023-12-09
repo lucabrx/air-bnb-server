@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS tokens;
+DROP INDEX IF EXISTS user_email_idx;
