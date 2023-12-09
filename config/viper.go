@@ -14,6 +14,8 @@ type AppConfig struct {
 	ResendApiKey       string `mapstructure:"RESEND_API_KEY"`
 	GithubClientId     string `mapstructure:"GITHUB_CLIENT_ID"`
 	GithubClientSecret string `mapstructure:"GITHUB_CLIENT_SECRET"`
+	AwsAccessKey       string `mapstructure:"AWS_ACCESS_KEY"`
+	AwsSecretKey       string `mapstructure:"AWS_SECRET_KEY"`
 }
 
 func LoadConfig(path string) (AppConfig, error) {

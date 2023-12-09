@@ -35,6 +35,10 @@ func (app *application) routes() *chi.Mux {
 		r.Post("/change-email", app.requireActivatedUser(app.changeEmailHandler))
 	})
 
+	r.Route("/v1/upload", func(r chi.Router) {
+		r.Post("/image", app.requireAuthenticatedUser(app.uploadImageHandler))
+	})
+
 	r.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		res := map[string]string{
 			"status": "ok",
