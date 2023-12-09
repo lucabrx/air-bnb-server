@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users(
     created_at timestamp(0) NOT NULL DEFAULT NOW(),
     name text,
     verification_token text,
+    reset_token text,
     email text UNIQUE NOT NULL,
     password_hash text,
     activated bool NOT NULL DEFAULT false,

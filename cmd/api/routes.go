@@ -26,6 +26,8 @@ func (app *application) routes() *chi.Mux {
 
 	r.Route("/v1/user", func(r chi.Router) {
 		r.Get("/", app.requireActivatedUser(app.getUserHandler))
+		r.Post("/reset-password", app.resetPasswordHandler)
+		r.Post("/new-password/{email}", app.resetPasswordConfirmHandler)
 	})
 
 	r.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {

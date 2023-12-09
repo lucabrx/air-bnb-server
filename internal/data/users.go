@@ -32,6 +32,7 @@ type User struct {
 	Activated         bool      `json:"activated"`
 	VerificationToken string    `json:"verificationToken,omitempty"`
 	Image             string    `json:"image,omitempty"`
+	ResetToken        string    `json:"resetToken,omitempty"`
 }
 
 func (u *User) IsAnonymous() bool {
@@ -121,9 +122,11 @@ func (m UserModel) Insert(user *User) error {
 }
 
 func (m UserModel) Get(id int64, email string) (*User, error) {
-	query := `SELECT id, created_at, COALESCE(name, ''), email, COALESCE(image, ''), COALESCE(password_hash, ''), activated, COALESCE( verification_token, '')
-			 FROM users
-			 WHERE id = $1 OR email = $2`
+	query := `SELECT id, created_at, COALESCE(name, ''), email, COALESCE(image, ''),
+       		  COALESCE(password_hash, ''), activated, COALESCE( verification_token, ''),
+       		  COALESCE(reset_token, '')
+			  FROM users
+			  WHERE id = $1 OR email = $2`
 
 	var user User
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -138,6 +141,7 @@ func (m UserModel) Get(id int64, email string) (*User, error) {
 		&user.Password.hash,
 		&user.Activated,
 		&user.VerificationToken,
+		&user.ResetToken,
 	)
 	if err != nil {
 		switch {
@@ -154,8 +158,8 @@ func (m UserModel) Get(id int64, email string) (*User, error) {
 func (m UserModel) Update(user *User) error {
 	query := `
         UPDATE users 
-        SET name = $1, email = $2, password_hash = $3, activated = $4, image = $5, verification_token = $6
-        WHERE id = $7`
+        SET name = $1, email = $2, password_hash = $3, activated = $4, image = $5, verification_token = $6, reset_token = $7
+        WHERE id = $8`
 
 	args := []interface{}{
 		NewNullString(user.Name),
@@ -164,6 +168,7 @@ func (m UserModel) Update(user *User) error {
 		user.Activated,
 		NewNullString(user.Image),
 		NewNullString(user.VerificationToken),
+		NewNullString(user.ResetToken),
 		user.ID,
 	}
 

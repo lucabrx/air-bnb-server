@@ -72,7 +72,7 @@ func (app *application) registerUserEmailHandler(w http.ResponseWriter, r *http.
 		app.serverErrorResponse(w, r, err)
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"user": user}, nil)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"userId": user.ID}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -149,7 +149,7 @@ func (app *application) loginUserHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
-			app.invalidAuthenticationTokenResponse(w, r)
+			app.notFoundResponse(w, r)
 		default:
 			app.serverErrorResponse(w, r, err)
 		}
