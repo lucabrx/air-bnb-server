@@ -8,7 +8,7 @@ import (
 
 func (app *application) routes() *chi.Mux {
 	r := chi.NewRouter()
-	
+
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users(
     created_at timestamp(0) NOT NULL DEFAULT NOW(),
     name text,
     email text UNIQUE NOT NULL,
-    password_hash bytea NOT NULL,
+    password_hash text,
     activated bool NOT NULL DEFAULT false,
     image text
 );
