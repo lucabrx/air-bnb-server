@@ -8,10 +8,12 @@ import (
 )
 
 type AppConfig struct {
-	DBUrl         string `mapstructure:"DB_URL"`
-	ServerAddress string `mapstructure:"SERVER_ADDRESS"`
-	ClientAddress string `mapstructure:"CLIENT_ADDRESS"`
-	ResendApiKey  string `mapstructure:"RESEND_API_KEY"`
+	DBUrl              string `mapstructure:"DB_URL"`
+	ServerAddress      string `mapstructure:"SERVER_ADDRESS"`
+	ClientAddress      string `mapstructure:"CLIENT_ADDRESS"`
+	ResendApiKey       string `mapstructure:"RESEND_API_KEY"`
+	GithubClientId     string `mapstructure:"GITHUB_CLIENT_ID"`
+	GithubClientSecret string `mapstructure:"GITHUB_CLIENT_SECRET"`
 }
 
 func LoadConfig(path string) (AppConfig, error) {

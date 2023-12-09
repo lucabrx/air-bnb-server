@@ -113,3 +113,159 @@ func (app *application) resetPasswordConfirmHandler(w http.ResponseWriter, r *ht
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"message": "success"}, nil)
 }
+
+func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.contextGetUser(r)
+
+	err := app.models.Users.Delete(user.ID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "success"}, nil)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+}
+
+func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.contextGetUser(r)
+
+	var input struct {
+		Name  string `json:"name"`
+		Image string `json:"image"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	user.Name = input.Name
+	user.Image = input.Image
+
+	err = app.models.Users.Update(user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"user": user}, nil)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+}
+
+func (app *application) updatePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.contextGetUser(r)
+
+	var input struct {
+		OldPassword string `json:"oldPassword"`
+		NewPassword string `json:"newPassword"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	match, err := user.Password.Matches(input.OldPassword)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	if !match {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	err = user.Password.Set(input.NewPassword)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.models.Users.Update(user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "success"}, nil)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+}
+
+func (app *application) requestChangeEmailHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.contextGetUser(r)
+
+	user.ResetEmailToken = random.RandString(3) + "-" + random.RandString(3)
+
+	err := app.models.Users.Update(user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	emailData := struct {
+		Name       string
+		ResetToken string
+	}{
+		Name:       user.Name,
+		ResetToken: user.ResetEmailToken,
+	}
+
+	err = app.sendEmail(
+		"./templates/change-email-code.tmpl",
+		emailData,
+		user.Email,
+		"Air BnB Clone - Change Email",
+	)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "ok"}, nil)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+}
+
+func (app *application) changeEmailHandler(w http.ResponseWriter, r *http.Request) {
+	user := app.contextGetUser(r)
+
+	var input struct {
+		ResetToken string `json:"resetToken"`
+		NewEmail   string `json:"newEmail"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	if user.ResetEmailToken != input.ResetToken {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+
+	user.Email = input.NewEmail
+	user.ResetEmailToken = ""
+
+	err = app.models.Users.Update(user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "success"}, nil)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+}

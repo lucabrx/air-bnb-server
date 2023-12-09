@@ -28,6 +28,11 @@ func (app *application) routes() *chi.Mux {
 		r.Get("/", app.requireActivatedUser(app.getUserHandler))
 		r.Post("/reset-password", app.resetPasswordHandler)
 		r.Post("/new-password/{email}", app.resetPasswordConfirmHandler)
+		r.Delete("/", app.requireActivatedUser(app.deleteUserHandler))
+		r.Put("/", app.requireActivatedUser(app.updateUserHandler))
+		r.Put("/password", app.requireActivatedUser(app.updatePasswordHandler))
+		r.Get("/refresh-token", app.requireActivatedUser(app.requestChangeEmailHandler))
+		r.Post("/change-email", app.requireActivatedUser(app.changeEmailHandler))
 	})
 
 	r.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {

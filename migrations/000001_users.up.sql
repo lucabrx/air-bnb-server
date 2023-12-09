@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS users(
     name text,
     verification_token text,
     reset_token text,
+    update_email_token text,
     email text UNIQUE NOT NULL,
     password_hash text,
     activated bool NOT NULL DEFAULT false,
