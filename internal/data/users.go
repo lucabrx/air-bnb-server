@@ -128,7 +128,7 @@ func (m UserModel) Update(user *User) error {
         SET name = $1, email = $2, password_hash = $3, activated = $4, image = $5
         WHERE id = $6`
 
-	args := []any{
+	args := []interface{}{
 		NewNullString(user.Name),
 		user.Email,
 		NewNullByteSlice(user.Password.hash),
@@ -140,7 +140,7 @@ func (m UserModel) Update(user *User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := m.DB.QueryRowContext(ctx, query, args...).Scan()
+	_, err := m.DB.ExecContext(ctx, query, args...)
 	if err != nil {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
