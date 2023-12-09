@@ -5,7 +5,9 @@ import (
 	"github.com/air-bnb/internal/data"
 	"github.com/air-bnb/internal/random"
 	"github.com/air-bnb/internal/validator"
+	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strconv"
 )
 
 func (app *application) registerUserEmailHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,4 +74,47 @@ func (app *application) registerUserEmailHandler(w http.ResponseWriter, r *http.
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+func (app *application) verificationUserHandler(w http.ResponseWriter, r *http.Request) {
+	params := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(params, 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	var input struct {
+		Code string `json:"code"`
+	}
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	user, err := app.models.Users.Get(id, "")
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+	v := validator.New()
+	if user.Activated {
+		v.AddError("code", "user already activated")
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	if user.VerificationToken != input.Code {
+		v.AddError("code", "invalid verification code")
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	user.Activated = true
+	user.VerificationToken = ""
+	err = app.models.Users.Update(user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "ok"}, nil)
 }

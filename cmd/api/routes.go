@@ -17,6 +17,7 @@ func (app *application) routes() *chi.Mux {
 
 	r.Route("/v1/auth", func(r chi.Router) {
 		r.Post("/register", app.registerUserEmailHandler)
+		r.Post("/verify/{id}", app.verificationUserHandler)
 	})
 
 	r.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
