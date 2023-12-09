@@ -11,6 +11,7 @@ type AppConfig struct {
 	DBUrl         string `mapstructure:"DB_URL"`
 	ServerAddress string `mapstructure:"SERVER_ADDRESS"`
 	ClientAddress string `mapstructure:"CLIENT_ADDRESS"`
+	ResendApiKey  string `mapstructure:"RESEND_API_KEY"`
 }
 
 func LoadConfig(path string) (AppConfig, error) {

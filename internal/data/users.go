@@ -23,13 +23,14 @@ type password struct {
 }
 
 type User struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Password  password  `json:"-"`
-	Activated bool      `json:"activated"`
-	Image     string    `json:"image,omitempty"`
+	ID                int64     `json:"id"`
+	CreatedAt         time.Time `json:"createdAt"`
+	Name              string    `json:"name,omitempty"`
+	Email             string    `json:"email"`
+	Password          password  `json:"-"`
+	Activated         bool      `json:"activated"`
+	VerificationToken string    `json:"verificationToken,omitempty"`
+	Image             string    `json:"image,omitempty"`
 }
 
 func (p *password) Set(plaintextPassword string) error {
@@ -86,18 +87,25 @@ func ValidateUser(v *validator.Validator, user *User) {
 
 func (m UserModel) Insert(user *User) error {
 	query := `
-        INSERT INTO users (name, email, password_hash, activated, image) 
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO users (name, email, password_hash, activated, image, verification_token) 
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, created_at`
 
-	args := []interface{}{NewNullString(user.Name), user.Email, user.Password.hash, user.Activated, NewNullString(user.Image)}
+	args := []interface{}{
+		NewNullString(user.Name),
+		user.Email,
+		user.Password.hash,
+		user.Activated,
+		NewNullString(user.Image),
+		NewNullString(user.VerificationToken),
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+		case err.Error() == `ERROR: duplicate key value violates unique constraint "users_email_key" (SQLSTATE 23505)`:
 			return ErrDuplicateEmail
 		default:
 			return err
@@ -108,7 +116,7 @@ func (m UserModel) Insert(user *User) error {
 }
 
 func (m UserModel) Get(id int64, email string) (*User, error) {
-	query := `SELECT id, created_at, COALESCE(name, ''), email, COALESCE(image, ''), COALESCE(password_hash, ''), activated
+	query := `SELECT id, created_at, COALESCE(name, ''), email, COALESCE(image, ''), COALESCE(password_hash, ''), activated, COALESCE( verification_token, '')
 			 FROM users
 			 WHERE id = $1 OR email = $2`
 
@@ -124,6 +132,7 @@ func (m UserModel) Get(id int64, email string) (*User, error) {
 		&user.Image,
 		&user.Password.hash,
 		&user.Activated,
+		&user.VerificationToken,
 	)
 	if err != nil {
 		switch {
@@ -140,8 +149,8 @@ func (m UserModel) Get(id int64, email string) (*User, error) {
 func (m UserModel) Update(user *User) error {
 	query := `
         UPDATE users 
-        SET name = $1, email = $2, password_hash = $3, activated = $4, image = $5
-        WHERE id = $6`
+        SET name = $1, email = $2, password_hash = $3, activated = $4, image = $5, verification_token = $6
+        WHERE id = $7`
 
 	args := []interface{}{
 		NewNullString(user.Name),
@@ -149,6 +158,7 @@ func (m UserModel) Update(user *User) error {
 		NewNullByteSlice(user.Password.hash),
 		user.Activated,
 		NewNullString(user.Image),
+		NewNullString(user.VerificationToken),
 		user.ID,
 	}
 
@@ -158,7 +168,7 @@ func (m UserModel) Update(user *User) error {
 	_, err := m.DB.ExecContext(ctx, query, args...)
 	if err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
+		case err.Error() == `ERROR: duplicate key value violates unique constraint "users_email_key" (SQLSTATE 23505)`:
 			return ErrDuplicateEmail
 		default:
 			return err

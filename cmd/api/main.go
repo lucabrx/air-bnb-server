@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/air-bnb/config"
 	"github.com/air-bnb/internal/data"
+	"github.com/air-bnb/internal/mailer"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -18,6 +19,7 @@ type application struct {
 	wg     sync.WaitGroup
 	config config.AppConfig
 	models data.Models
+	mailer mailer.Mailer
 }
 
 func main() {
@@ -39,6 +41,7 @@ func main() {
 		logger: &log.Logger,
 		config: cfg,
 		models: data.NewModels(db),
+		mailer: mailer.NewMailer(cfg.ResendApiKey),
 	}
 
 	err = app.serve()

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/air-bnb/internal/data"
+	"github.com/air-bnb/internal/random"
 	"github.com/air-bnb/internal/validator"
 	"net/http"
 )
@@ -28,6 +29,7 @@ func (app *application) registerUserEmailHandler(w http.ResponseWriter, r *http.
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+	user.VerificationToken = random.RandString(3) + "-" + random.RandString(3)
 
 	v := validator.New()
 	data.ValidateUser(v, user)
@@ -46,6 +48,24 @@ func (app *application) registerUserEmailHandler(w http.ResponseWriter, r *http.
 			app.serverErrorResponse(w, r, err)
 		}
 		return
+	}
+
+	emailData := struct {
+		Name              string
+		VerificationToken string
+	}{
+		Name:              user.Name,
+		VerificationToken: user.VerificationToken,
+	}
+
+	err = app.sendEmail(
+		"./templates/email-code.tmpl",
+		emailData,
+		user.Email,
+		"Air BnB Clone - Email Verification",
+	)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
 	}
 
 	err = app.writeJSON(w, http.StatusCreated, envelope{"user": user}, nil)
