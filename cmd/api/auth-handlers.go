@@ -2,12 +2,14 @@ package main
 
 import (
 	"errors"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/air-bnb/internal/data"
 	"github.com/air-bnb/internal/random"
 	"github.com/air-bnb/internal/validator"
 	"github.com/go-chi/chi/v5"
-	"net/http"
-	"strconv"
 )
 
 func (app *application) registerUserEmailHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,5 +118,18 @@ func (app *application) verificationUserHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "ok"}, nil)
+	token,err := app.models.Tokens.New(user.ID, 30 * 24 * time.Hour, data.ScopeAuthentication)
+	if err != nil {
+		app.serverErrorResponse(w,r,err)
+		return
+	}
+
+	cookie := app.sessionCookie(token.Plaintext, token.Expiry)
+	http.SetCookie(w, cookie)
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"cookie value": cookie.Value}, nil)
+	if err != nil {
+		app.serverErrorResponse(w,r,err)
+		return
+	}
 }
