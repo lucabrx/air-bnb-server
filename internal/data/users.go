@@ -152,3 +152,19 @@ func (m UserModel) Update(user *User) error {
 
 	return nil
 }
+
+func (m UserModel) Delete(id int64) error {
+	query := `
+		DELETE FROM users 
+		WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := m.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
