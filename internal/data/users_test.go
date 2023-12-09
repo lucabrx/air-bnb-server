@@ -135,3 +135,14 @@ func TestUserModel_Update(t *testing.T) {
 	require.NoError(t, err)
 
 }
+
+func TestUserModel_Delete(t *testing.T) {
+	user := CreateRandomUser(t)
+
+	err := testQueries.Users.Delete(user.ID)
+	require.NoError(t, err)
+
+	user2, err := testQueries.Users.Get(user.ID, "")
+	require.Error(t, err)
+	require.Empty(t, user2)
+}
