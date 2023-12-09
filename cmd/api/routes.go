@@ -31,7 +31,7 @@ func (app *application) routes() *chi.Mux {
 		r.Delete("/", app.requireActivatedUser(app.deleteUserHandler))
 		r.Patch("/", app.requireActivatedUser(app.updateUserHandler))
 		r.Patch("/password", app.requireActivatedUser(app.updatePasswordHandler))
-		r.Get("/refresh-token", app.requireActivatedUser(app.requestChangeEmailHandler))
+		r.Get("/request-token", app.requireActivatedUser(app.requestChangeEmailHandler))
 		r.Post("/change-email", app.requireActivatedUser(app.changeEmailHandler))
 	})
 

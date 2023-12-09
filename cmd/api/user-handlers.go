@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/air-bnb/internal/data"
 	"github.com/air-bnb/internal/random"
 	"github.com/air-bnb/internal/validator"
@@ -196,6 +197,8 @@ func (app *application) updatePasswordHandler(w http.ResponseWriter, r *http.Req
 		app.invalidAuthenticationTokenResponse(w, r)
 		return
 	}
+
+	fmt.Println(match)
 
 	err = user.Password.Set(input.NewPassword)
 	if err != nil {

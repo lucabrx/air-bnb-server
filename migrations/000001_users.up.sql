@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users(
     reset_token text,
     update_email_token text,
     email text UNIQUE NOT NULL,
-    password_hash text,
+    password_hash bytea,
     activated bool NOT NULL DEFAULT false,
     image text
 );
