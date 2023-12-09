@@ -15,6 +15,10 @@ func (app *application) routes() *chi.Mux {
 	r.NotFound(app.notFoundResponse)
 	r.MethodNotAllowed(app.methodNotAllowedResponse)
 
+	r.Route("/v1/auth", func(r chi.Router) {
+		r.Post("/register", app.registerUserEmailHandler)
+	})
+
 	r.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		res := map[string]string{
 			"status": "ok",
