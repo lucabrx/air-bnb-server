@@ -11,6 +11,8 @@ func (app *application) routes() *chi.Mux {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(app.authenticate)
+	r.Use(app.enableCORS)
 
 	r.NotFound(app.notFoundResponse)
 	r.MethodNotAllowed(app.methodNotAllowedResponse)
@@ -18,6 +20,12 @@ func (app *application) routes() *chi.Mux {
 	r.Route("/v1/auth", func(r chi.Router) {
 		r.Post("/register", app.registerUserEmailHandler)
 		r.Post("/verify/{id}", app.verificationUserHandler)
+		r.Post("/login", app.loginUserHandler)
+		r.Delete("/logout", app.requireActivatedUser(app.logoutHandler))
+	})
+
+	r.Route("/v1/user", func(r chi.Router) {
+		r.Get("/", app.requireActivatedUser(app.getUserHandler))
 	})
 
 	r.Get("/healthcheck", func(w http.ResponseWriter, r *http.Request) {

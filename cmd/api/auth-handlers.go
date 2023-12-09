@@ -118,9 +118,9 @@ func (app *application) verificationUserHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	token,err := app.models.Tokens.New(user.ID, 30 * 24 * time.Hour, data.ScopeAuthentication)
+	token, err := app.models.Tokens.New(user.ID, 30*24*time.Hour, data.ScopeAuthentication)
 	if err != nil {
-		app.serverErrorResponse(w,r,err)
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 
@@ -129,7 +129,74 @@ func (app *application) verificationUserHandler(w http.ResponseWriter, r *http.R
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"cookie value": cookie.Value}, nil)
 	if err != nil {
-		app.serverErrorResponse(w,r,err)
+		app.serverErrorResponse(w, r, err)
 		return
+	}
+}
+
+func (app *application) loginUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	user, err := app.models.Users.Get(0, input.Email)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidAuthenticationTokenResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	if !user.Activated {
+		app.inactiveAccountResponse(w, r)
+		return
+	}
+	match, err := user.Password.Matches(input.Password)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	if !match {
+		app.invalidAuthenticationTokenResponse(w, r)
+		return
+	}
+	token, err := app.models.Tokens.New(user.ID, 30*24*time.Hour, data.ScopeAuthentication)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	cookie := app.sessionCookie(token.Plaintext, token.Expiry)
+	http.SetCookie(w, cookie)
+	err = app.writeJSON(w, http.StatusOK, envelope{"cookie value": cookie.Value}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+}
+
+func (app *application) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	session := app.contextGetUser(r)
+
+	err := app.models.Tokens.DeleteAllForUser(data.ScopeAuthentication, session.ID)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	cookie := app.sessionCookie("", time.Unix(0, 0))
+	http.SetCookie(w, cookie)
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "you have been logged out"}, nil)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
 	}
 }
