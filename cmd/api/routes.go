@@ -35,6 +35,12 @@ func (app *application) routes() *chi.Mux {
 		r.Post("/change-email/verify/{email}", app.verifyChangeEmailHandler)
 	})
 
+	r.Route("/v1/listings", func(r chi.Router) {
+		r.Get("/user-listings", app.requireActivatedUser(app.getAllUserListingsHandler))
+		r.Get("/{listingId}", app.getListingHandler)
+		r.Post("/", app.requireActivatedUser(app.createListingHandler))
+	})
+
 	r.Route("/v1/upload", func(r chi.Router) {
 		r.Post("/image", app.requireAuthenticatedUser(app.uploadImageHandler))
 	})
