@@ -213,7 +213,7 @@ func (m UserModel) Delete(id int64) error {
 func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error) {
 	tokenHash := sha256.Sum256([]byte(tokenPlaintext))
 	query := `
-        SELECT u.id, u.activated, u.created_at, COALESCE(u.name, ''), u.email ,COALESCE(u.image,''), u.password_hash
+        SELECT u.id, u.activated, u.created_at, COALESCE(u.name, ''), u.email ,COALESCE(u.image,''), coalesce(u.password_hash, ''), COALESCE(u.update_email_token, '')
         FROM users u
         INNER JOIN tokens t
         ON u.id = t.user_id
@@ -236,6 +236,7 @@ func (m UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 		&user.Email,
 		&user.Image,
 		&user.Password.hash,
+		&user.ResetEmailToken,
 	)
 	if err != nil {
 		switch {

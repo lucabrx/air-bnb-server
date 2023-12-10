@@ -218,12 +218,21 @@ func (app *application) updatePasswordHandler(w http.ResponseWriter, r *http.Req
 	}
 }
 
-func (app *application) requestChangeEmailHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) changeEmailHandler(w http.ResponseWriter, r *http.Request) {
 	user := app.contextGetUser(r)
+	var input struct {
+		Email string `json:"email"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
 
 	user.ResetEmailToken = random.RandString(3) + "-" + random.RandString(3)
 
-	err := app.models.Users.Update(user)
+	err = app.models.Users.Update(user)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -240,7 +249,7 @@ func (app *application) requestChangeEmailHandler(w http.ResponseWriter, r *http
 	err = app.sendEmail(
 		"./templates/change-email-code.tmpl",
 		emailData,
-		user.Email,
+		input.Email,
 		"Air BnB Clone - Change Email",
 	)
 	if err != nil {
@@ -253,12 +262,12 @@ func (app *application) requestChangeEmailHandler(w http.ResponseWriter, r *http
 	}
 }
 
-func (app *application) changeEmailHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) verifyChangeEmailHandler(w http.ResponseWriter, r *http.Request) {
 	user := app.contextGetUser(r)
+	email := chi.URLParam(r, "email")
 
 	var input struct {
-		ResetToken string `json:"resetToken"`
-		NewEmail   string `json:"newEmail"`
+		VerifyCode string `json:"verifyCode"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -267,12 +276,20 @@ func (app *application) changeEmailHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if user.ResetEmailToken != input.ResetToken {
+	v := validator.New()
+	data.ValidateEmail(v, email)
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Println()
+	if user.ResetEmailToken != input.VerifyCode {
 		app.invalidAuthenticationTokenResponse(w, r)
 		return
 	}
 
-	user.Email = input.NewEmail
+	user.Email = email
 	user.ResetEmailToken = ""
 
 	err = app.models.Users.Update(user)

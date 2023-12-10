@@ -31,8 +31,8 @@ func (app *application) routes() *chi.Mux {
 		r.Delete("/", app.requireActivatedUser(app.deleteUserHandler))
 		r.Patch("/", app.requireActivatedUser(app.updateUserHandler))
 		r.Patch("/password", app.requireActivatedUser(app.updatePasswordHandler))
-		r.Get("/request-token", app.requireActivatedUser(app.requestChangeEmailHandler))
 		r.Post("/change-email", app.requireActivatedUser(app.changeEmailHandler))
+		r.Post("/change-email/verify/{email}", app.verifyChangeEmailHandler)
 	})
 
 	r.Route("/v1/upload", func(r chi.Router) {
