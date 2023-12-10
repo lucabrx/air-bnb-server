@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS listings(
     title text NOT NULL,
     description text NOT NULL,
     category text NOT NULL,
-    roomCount integer NOT NULL,
-    bathroomCount integer NOT NULL,
-    guestCount integer NOT NULL,
+    room_count integer NOT NULL,
+    bath_roomCount integer NOT NULL,
+    guest_count integer NOT NULL,
     location text NOT NULL,
     price integer NOT NULL,
     owner_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE
