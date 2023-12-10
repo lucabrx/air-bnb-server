@@ -64,3 +64,26 @@ func CreateTokenForUser(t *testing.T, user User) Token {
 
 	return *token
 }
+
+func CreateRandomListing(t *testing.T, user User) Listing {
+	listing := Listing{
+		OwnerID:       user.ID,
+		OwnerName:     user.Name,
+		Title:         random.RandString(10),
+		Description:   random.RandString(10),
+		Category:      random.RandString(10),
+		RoomCount:     random.RandInt(1, 10),
+		BathroomCount: random.RandInt(1, 10),
+		GuestCount:    random.RandInt(1, 10),
+		Location:      random.RandString(10),
+		Price:         random.RandInt(1, 100),
+	}
+
+	err := testQueries.Listings.Insert(&listing)
+	require.NoError(t, err)
+
+	require.NotZero(t, listing.ID)
+	require.NotZero(t, listing.CreatedAt)
+
+	return listing
+}
