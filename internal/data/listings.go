@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/air-bnb/internal/validator"
 	"time"
 )
 
@@ -25,6 +26,23 @@ type Listing struct {
 	OwnerID       int64  `json:"owner_id"`
 	OwnerName     string `json:"owner_name"`
 	OwnerPhoto    string `json:"owner_photo,omitempty"`
+	Images        []*Image
+}
+
+func ValidateListing(v *validator.Validator, listing *Listing) {
+	v.Check(listing.Title != "", "title", "must be provided")
+	v.Check(len(listing.Title) <= 500, "title", "must not be more than 500 bytes long")
+	v.Check(listing.Description != "", "description", "must be provided")
+	v.Check(len(listing.Description) <= 5000, "description", "must not be more than 5000 bytes long")
+	v.Check(listing.Category != "", "category", "must be provided")
+	v.Check(len(listing.Category) <= 255, "category", "must not be more than 255 bytes long")
+	v.Check(listing.RoomCount > 0, "room_count", "must be greater than zero")
+	v.Check(listing.BathroomCount > 0, "bathroom_count", "must be greater than zero")
+	v.Check(listing.GuestCount > 0, "guest_count", "must be greater than zero")
+	v.Check(listing.Location != "", "location", "must be provided")
+	v.Check(len(listing.Location) <= 255, "location", "must not be more than 255 bytes long")
+	v.Check(listing.Price > 0, "price", "must be greater than zero")
+	v.Check(listing.OwnerID > 0, "owner_id", "must be greater than zero")
 }
 
 func (m ListingsModel) Insert(listing *Listing) error {
