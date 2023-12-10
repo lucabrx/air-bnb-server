@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS listings(
     description text NOT NULL,
     category text NOT NULL,
     room_count integer NOT NULL,
-    bath_roomCount integer NOT NULL,
+    bathroom_count integer NOT NULL,
     guest_count integer NOT NULL,
     location text NOT NULL,
     price integer NOT NULL,
