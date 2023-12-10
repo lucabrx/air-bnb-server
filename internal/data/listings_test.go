@@ -45,3 +45,15 @@ func TestListingsModel_AllUserListings(t *testing.T) {
 	require.NotEmpty(t, listings)
 	require.Len(t, listings, 3)
 }
+
+func TestListingsModel_Delete(t *testing.T) {
+	user := CreateRandomUser(t)
+	listing := CreateRandomListing(t, user)
+
+	err := testQueries.Listings.Delete(listing.ID, user.ID)
+	require.NoError(t, err)
+
+	listingFromDB, err := testQueries.Listings.Get(listing.ID)
+	require.Error(t, err)
+	require.Empty(t, listingFromDB)
+}
