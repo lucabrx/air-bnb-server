@@ -45,6 +45,19 @@ func TestValidatePasswordPlaintext(t *testing.T) {
 	require.Equal(t, 0, len(v.Errors))
 }
 
+func TestValidateUser(t *testing.T) {
+	user := &User{
+		Email: random.RandString(10) + "@gmail.com",
+		Name:  random.RandString(10),
+	}
+	err := user.Password.Set(random.RandString(10))
+	require.NoError(t, err)
+
+	v := validator.New()
+	ValidateUser(v, user)
+	require.Equal(t, 0, len(v.Errors))
+}
+
 func TestUserModel_Insert_Valid(t *testing.T) {
 	CreateRandomUser(t)
 }

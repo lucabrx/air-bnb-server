@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type envelope map[string]interface{}
@@ -67,4 +68,17 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 		}
 	}
 	return nil
+}
+
+func (app *application) sessionCookie(value string, expires time.Time) *http.Cookie {
+	return &http.Cookie{
+		Name:     "session",
+		Value:    value,
+		Path:     "/",
+		Secure:   false, // Change to true in production
+		HttpOnly: true,
+		Expires:  expires,
+		SameSite: http.SameSiteLaxMode,
+		Domain:   "localhost",
+	}
 }
