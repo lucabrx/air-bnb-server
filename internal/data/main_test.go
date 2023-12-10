@@ -87,3 +87,17 @@ func CreateRandomListing(t *testing.T, user User) Listing {
 
 	return listing
 }
+
+func CreateRandomImage(t *testing.T, listingId int64) Image {
+	image := Image{
+		ListingID: listingId,
+		Url:       random.RandString(10),
+	}
+
+	err := testQueries.Images.Insert(&image)
+	require.NoError(t, err)
+
+	require.NotZero(t, image.ID)
+
+	return image
+}
