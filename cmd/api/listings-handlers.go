@@ -85,7 +85,7 @@ func (app *application) createListingHandler(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	err = app.writeJSON(w, http.StatusCreated, envelope{"listing": listing}, nil)
+	err = app.writeJSON(w, http.StatusCreated, envelope{"id": listing.ID}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
