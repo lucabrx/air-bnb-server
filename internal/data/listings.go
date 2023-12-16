@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/air-bnb/internal/validator"
+	"github.com/jackc/pgx/v5"
 	"time"
 )
 
@@ -12,51 +13,80 @@ type ListingsModel struct {
 	DB *sql.DB
 }
 
+type Location struct {
+	Flag   string  `json:"flag"`
+	Label  string  `json:"label"`
+	Lat    float64 `json:"lat"`
+	Lng    float64 `json:"lng"`
+	Region string  `json:"region"`
+	Value  string  `json:"value"`
+}
+
 type Listing struct {
-	ID            int64  `json:"id"`
-	CreatedAt     string `json:"created_at"`
-	Title         string `json:"title"`
-	Description   string `json:"description"`
-	Category      string `json:"category"`
-	RoomCount     int64  `json:"room_count"`
-	BathroomCount int64  `json:"bathroom_count"`
-	GuestCount    int64  `json:"guest_count"`
-	Location      string `json:"location"`
-	Price         int64  `json:"price"`
-	OwnerID       int64  `json:"owner_id"`
-	OwnerName     string `json:"owner_name"`
-	OwnerPhoto    string `json:"owner_photo,omitempty"`
-	Images        []*Image
+	ID          int64    `json:"id"`
+	CreatedAt   string   `json:"created_at"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Category    string   `json:"category"`
+	Bedrooms    int64    `json:"bedrooms"`
+	Bathrooms   int64    `json:"bathrooms"`
+	Guests      int64    `json:"guests"`
+	Location    Location `json:"location"`
+	Price       int64    `json:"price"`
+	OwnerID     int64    `json:"ownerId"`
+	OwnerName   string   `json:"ownerName"`
+	OwnerPhoto  string   `json:"ownerPhoto,omitempty"`
+	Images      []*Image `json:"images"`
 }
 
 func ValidateListing(v *validator.Validator, listing *Listing) {
 	v.Check(listing.Title != "", "title", "must be provided")
 	v.Check(len(listing.Title) <= 500, "title", "must not be more than 500 bytes long")
+
 	v.Check(listing.Description != "", "description", "must be provided")
 	v.Check(len(listing.Description) <= 5000, "description", "must not be more than 5000 bytes long")
+
 	v.Check(listing.Category != "", "category", "must be provided")
 	v.Check(len(listing.Category) <= 255, "category", "must not be more than 255 bytes long")
-	v.Check(listing.RoomCount > 0, "room_count", "must be greater than zero")
-	v.Check(listing.BathroomCount > 0, "bathroom_count", "must be greater than zero")
-	v.Check(listing.GuestCount > 0, "guest_count", "must be greater than zero")
-	v.Check(listing.Location != "", "location", "must be provided")
-	v.Check(len(listing.Location) <= 255, "location", "must not be more than 255 bytes long")
+
+	v.Check(listing.Bedrooms > 0, "bedrooms", "must be greater than zero")
+	v.Check(listing.Bathrooms > 0, "bathrooms", "must be greater than zero")
+	v.Check(listing.Guests > 0, "guests", "must be greater than zero")
+
+	v.Check(listing.Location.Flag != "", "location.flag", "must be provided")
+	v.Check(len(listing.Location.Flag) <= 255, "location.flag", "must not be more than 255 bytes long")
+
+	v.Check(len(listing.Location.Label) <= 255, "location.label", "must not be more than 255 bytes long")
+
+	v.Check(len(listing.Location.Region) <= 255, "location.region", "must not be more than 255 bytes long")
+
+	v.Check(len(listing.Location.Value) <= 255, "location.value", "must not be more than 255 bytes long")
+
+	v.Check(listing.Location.Lat != 0, "location.lat", "must be provided")
+	v.Check(listing.Location.Lng != 0, "location.lng", "must be provided")
+
 	v.Check(listing.Price > 0, "price", "must be greater than zero")
 	v.Check(listing.OwnerID > 0, "owner_id", "must be greater than zero")
 }
 
 func (m ListingsModel) Insert(listing *Listing) error {
-	query := `INSERT INTO listings (title, description, category, room_count, bathroom_count,
-              guest_count, location, price, owner_id)
-			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, created_at`
+	query := `INSERT INTO listings (title, description, category, bedrooms, bathrooms,
+              guests, location_flag, location_label, location_lat, location_lng, location_region, location_value,
+              price, owner_id)
+			  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id, created_at`
 	args := []interface{}{
 		listing.Title,
 		listing.Description,
 		listing.Category,
-		listing.RoomCount,
-		listing.BathroomCount,
-		listing.GuestCount,
-		listing.Location,
+		listing.Bedrooms,
+		listing.Bathrooms,
+		listing.Guests,
+		listing.Location.Flag,
+		listing.Location.Label,
+		listing.Location.Lat,
+		listing.Location.Lng,
+		listing.Location.Region,
+		listing.Location.Value,
 		listing.Price,
 		listing.OwnerID,
 	}
@@ -72,8 +102,9 @@ func (m ListingsModel) Insert(listing *Listing) error {
 }
 
 func (m ListingsModel) Get(id int64) (*Listing, error) {
-	query := `SELECT l.id, l.created_at, l.title, l.description, l.category, l.room_count,
-			  l.bathroom_count, l.guest_count, l.location, l.price, l.owner_id, u.name, COALESCE(u.image, '')
+	query := `SELECT l.id, l.created_at, l.title, l.description, l.category, l.bedrooms,
+			  l.bathrooms, l.guests, l.location_flag, l.location_label, l.location_lat, l.location_lng,
+			  l.location_region, l.location_value, l.price, l.owner_id, u.name, COALESCE(u.image, '')
 			  FROM listings l
 			  INNER JOIN users u ON u.id = l.owner_id
 			  WHERE l.id = $1`
@@ -88,10 +119,15 @@ func (m ListingsModel) Get(id int64) (*Listing, error) {
 		&listing.Title,
 		&listing.Description,
 		&listing.Category,
-		&listing.RoomCount,
-		&listing.BathroomCount,
-		&listing.GuestCount,
-		&listing.Location,
+		&listing.Bedrooms,
+		&listing.Bathrooms,
+		&listing.Guests,
+		&listing.Location.Flag,
+		&listing.Location.Label,
+		&listing.Location.Lat,
+		&listing.Location.Lng,
+		&listing.Location.Region,
+		&listing.Location.Value,
 		&listing.Price,
 		&listing.OwnerID,
 		&listing.OwnerName,
@@ -99,7 +135,7 @@ func (m ListingsModel) Get(id int64) (*Listing, error) {
 	)
 	if err != nil {
 		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		case errors.Is(err, pgx.ErrNoRows):
 			return nil, ErrRecordNotFound
 		default:
 			return nil, err
@@ -110,8 +146,9 @@ func (m ListingsModel) Get(id int64) (*Listing, error) {
 }
 
 func (m ListingsModel) AllUserListings(userID int64) ([]*Listing, error) {
-	query := `SELECT l.id, l.created_at, l.title, l.description, l.category, l.room_count,
-			  l.bathroom_count, l.guest_count, l.location, l.price, l.owner_id, u.name, COALESCE(u.image, '')
+	query := `SELECT l.id, l.created_at, l.title, l.description, l.category, l.bedrooms,
+			  l.bathrooms, l.guests, l.location_flag, l.location_label, l.location_lat, l.location_lng,
+			  l.location_region, l.location_value, l.price, l.owner_id, u.name, COALESCE(u.image, '')
 			  FROM listings l
 			  INNER JOIN users u ON u.id = l.owner_id
 			  WHERE l.owner_id = $1`
@@ -134,10 +171,15 @@ func (m ListingsModel) AllUserListings(userID int64) ([]*Listing, error) {
 			&listing.Title,
 			&listing.Description,
 			&listing.Category,
-			&listing.RoomCount,
-			&listing.BathroomCount,
-			&listing.GuestCount,
-			&listing.Location,
+			&listing.Bedrooms,
+			&listing.Bathrooms,
+			&listing.Guests,
+			&listing.Location.Flag,
+			&listing.Location.Label,
+			&listing.Location.Lat,
+			&listing.Location.Lng,
+			&listing.Location.Region,
+			&listing.Location.Value,
 			&listing.Price,
 			&listing.OwnerID,
 			&listing.OwnerName,

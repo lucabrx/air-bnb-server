@@ -1,13 +1,18 @@
-CREATE TABLE IF NOT EXISTS listings(
+CREATE TABLE IF NOT EXISTS listings (
     id bigserial PRIMARY KEY,
     created_at timestamp(0) NOT NULL DEFAULT NOW(),
     title text NOT NULL,
     description text NOT NULL,
     category text NOT NULL,
-    room_count integer NOT NULL,
-    bathroom_count integer NOT NULL,
-    guest_count integer NOT NULL,
-    location text NOT NULL,
+    bedrooms integer NOT NULL,
+    bathrooms integer NOT NULL,
+    guests integer NOT NULL,
+    location_flag text NOT NULL,
+    location_label text NOT NULL,
+    location_lat float NOT NULL,
+    location_lng float NOT NULL,
+    location_region text NOT NULL,
+    location_value text NOT NULL,
     price integer NOT NULL,
     owner_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE
 );

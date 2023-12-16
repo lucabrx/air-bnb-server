@@ -9,62 +9,83 @@ import (
 	"strconv"
 )
 
+type Location struct {
+	Flag   string    `json:"flag"`
+	Label  string    `json:"label"`
+	LatLng []float64 `json:"latlng"`
+	Region string    `json:"region"`
+	Value  string    `json:"value"`
+}
+
 func (app *application) createListingHandler(w http.ResponseWriter, r *http.Request) {
-	session := app.contextGetUser(r)
 	var input struct {
-		Title         string   `json:"title"`
-		Description   string   `json:"description"`
-		Category      string   `json:"category"`
-		RoomCount     int64    `json:"room_count"`
-		BathroomCount int64    `json:"bathroom_count"`
-		GuestCount    int64    `json:"guest_count"`
-		Location      string   `json:"location"`
-		Price         int64    `json:"price"`
-		Images        []string `json:"images"`
+		Bathrooms   int64    `json:"bathrooms"`
+		Bedrooms    int64    `json:"bedrooms"`
+		Category    string   `json:"category"`
+		Guests      int64    `json:"guests"`
+		Price       string   `json:"price"`
+		Title       string   `json:"title"`
+		Description string   `json:"description"`
+		Images      []string `json:"images"`
+		Location    Location `json:"location"`
 	}
 	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+
+	price, err := strconv.ParseInt(input.Price, 10, 64)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	listing := &data.Listing{
-		Title:         input.Title,
-		Description:   input.Description,
-		Category:      input.Category,
-		RoomCount:     input.RoomCount,
-		BathroomCount: input.BathroomCount,
-		GuestCount:    input.GuestCount,
-		Location:      input.Location,
-		Price:         input.Price,
-		OwnerID:       session.ID,
-		OwnerName:     session.Name,
-		OwnerPhoto:    session.Image,
+	location := &data.Location{
+		Flag:   input.Location.Flag,
+		Label:  input.Location.Label,
+		Lat:    input.Location.LatLng[0],
+		Lng:    input.Location.LatLng[1],
+		Region: input.Location.Region,
 	}
+
+	listing := &data.Listing{
+		Bathrooms:   input.Bathrooms,
+		Bedrooms:    input.Bedrooms,
+		Category:    input.Category,
+		Guests:      input.Guests,
+		Price:       price,
+		Title:       input.Title,
+		Description: input.Description,
+		OwnerID:     app.contextGetUser(r).ID,
+		Location:    *location,
+	}
+
 	v := validator.New()
-	if data.ValidateListing(v, listing); !v.Valid() {
+	data.ValidateListing(v, listing)
+	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
+
 	err = app.models.Listings.Insert(listing)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	for _, inputImage := range input.Images {
-		dbImage := &data.Image{
+	for _, image := range input.Images {
+		image := &data.Image{
 			ListingID: listing.ID,
-			Url:       inputImage,
+			Url:       image,
 		}
-		err = app.models.Images.Insert(dbImage)
+		err = app.models.Images.Insert(image)
 		if err != nil {
 			app.serverErrorResponse(w, r, err)
 			return
 		}
 	}
-	// return a response
-	err = app.writeJSON(w, http.StatusCreated, envelope{"listingId": listing.ID}, nil)
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"listing": listing}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
