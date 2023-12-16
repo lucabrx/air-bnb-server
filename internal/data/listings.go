@@ -36,7 +36,6 @@ type Listing struct {
 	OwnerID     int64    `json:"ownerId"`
 	OwnerName   string   `json:"ownerName"`
 	OwnerPhoto  string   `json:"ownerPhoto,omitempty"`
-	Images      []*Image `json:"images"`
 }
 
 func ValidateListing(v *validator.Validator, listing *Listing) {
