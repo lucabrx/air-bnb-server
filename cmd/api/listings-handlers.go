@@ -135,6 +135,15 @@ func (app *application) getAllUserListingsHandler(w http.ResponseWriter, r *http
 		return
 	}
 
+	for _, listing := range listings {
+		images, err := app.models.Images.GetForListing(listing.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		listing.Images = images
+	}
+
 	err = app.writeJSON(w, http.StatusOK, envelope{"listings": listings}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
