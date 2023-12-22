@@ -36,30 +36,29 @@ type Listing struct {
 	OwnerID     int64    `json:"ownerId"`
 	OwnerName   string   `json:"ownerName"`
 	OwnerPhoto  string   `json:"ownerPhoto,omitempty"`
+	Images      []*Image `json:"images,omitempty"`
 }
 
 func ValidateListing(v *validator.Validator, listing *Listing) {
 	v.Check(listing.Title != "", "title", "must be provided")
-	v.Check(len(listing.Title) <= 500, "title", "must not be more than 500 bytes long")
+	v.Check(len(listing.Title) <= 500, "title", "must not be more than 500 characters long")
 
 	v.Check(listing.Description != "", "description", "must be provided")
-	v.Check(len(listing.Description) <= 5000, "description", "must not be more than 5000 bytes long")
+	v.Check(len(listing.Description) <= 5000, "description", "must not be more than 5000 characters long")
 
 	v.Check(listing.Category != "", "category", "must be provided")
-	v.Check(len(listing.Category) <= 255, "category", "must not be more than 255 bytes long")
+	v.Check(len(listing.Category) <= 255, "category", "must not be more than 255 characters long")
 
 	v.Check(listing.Bedrooms > 0, "bedrooms", "must be greater than zero")
 	v.Check(listing.Bathrooms > 0, "bathrooms", "must be greater than zero")
 	v.Check(listing.Guests > 0, "guests", "must be greater than zero")
 
 	v.Check(listing.Location.Flag != "", "location.flag", "must be provided")
-	v.Check(len(listing.Location.Flag) <= 255, "location.flag", "must not be more than 255 bytes long")
+	v.Check(len(listing.Location.Flag) <= 255, "location.flag", "must not be more than 255 characters long")
 
-	v.Check(len(listing.Location.Label) <= 255, "location.label", "must not be more than 255 bytes long")
+	v.Check(len(listing.Location.Label) <= 255, "location.label", "must not be more than 255 characters long")
 
-	v.Check(len(listing.Location.Region) <= 255, "location.region", "must not be more than 255 bytes long")
-
-	v.Check(len(listing.Location.Value) <= 255, "location.value", "must not be more than 255 bytes long")
+	v.Check(len(listing.Location.Region) <= 255, "location.region", "must not be more than 255 characters long")
 
 	v.Check(listing.Location.Lat != 0, "location.lat", "must be provided")
 	v.Check(listing.Location.Lng != 0, "location.lng", "must be provided")

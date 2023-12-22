@@ -22,6 +22,8 @@ func (app *application) routes() *chi.Mux {
 		r.Post("/verify/{id}", app.verificationUserHandler)
 		r.Post("/login", app.loginUserHandler)
 		r.Delete("/logout", app.requireActivatedUser(app.logoutHandler))
+		r.Get("/github/login", app.githubLoginHandler)
+		r.Get("/github/callback", app.githubCallbackHandler)
 	})
 
 	r.Route("/v1/user", func(r chi.Router) {

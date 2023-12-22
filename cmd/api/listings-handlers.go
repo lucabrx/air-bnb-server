@@ -119,8 +119,9 @@ func (app *application) getListingHandler(w http.ResponseWriter, r *http.Request
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+	listing.Images = images
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"listing": listing, "listingImages": images}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"listing": listing}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
@@ -132,15 +133,6 @@ func (app *application) getAllUserListingsHandler(w http.ResponseWriter, r *http
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
-	}
-
-	for _, listing := range listings {
-		images, err := app.models.Images.GetForListing(listing.ID)
-		if err != nil {
-			app.serverErrorResponse(w, r, err)
-			return
-		}
-		listing.Images = images
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"listings": listings}, nil)
