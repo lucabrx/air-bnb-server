@@ -149,3 +149,138 @@ func (app *application) getAllUserListingsHandler(w http.ResponseWriter, r *http
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) deleteListingHandler(w http.ResponseWriter, r *http.Request) {
+	session := app.contextGetUser(r)
+	params := chi.URLParam(r, "listingId")
+	id, err := strconv.ParseInt(params, 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	err = app.models.Listings.Delete(id, session.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "listing deleted successfully"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) addImageToListingGalleryHandler(w http.ResponseWriter, r *http.Request) {
+	params := chi.URLParam(r, "listingId")
+	id, err := strconv.ParseInt(params, 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	var input struct {
+		Url string `json:"url"`
+	}
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+
+	image := &data.Image{
+		ListingID: id,
+		Url:       input.Url,
+	}
+
+	err = app.models.Images.Insert(image)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"url": image.Url}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) removeImageFromListingGalleryHandler(w http.ResponseWriter, r *http.Request) {
+	params := chi.URLParam(r, "imageId")
+	id, err := strconv.ParseInt(params, 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	err = app.models.Images.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "image deleted successfully"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) uploadImagesToListingHandler(w http.ResponseWriter, r *http.Request) {
+	// it will be []string
+	params := chi.URLParam(r, "listingId")
+	listingId, err := strconv.ParseInt(params, 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if listingId < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	var input struct {
+		Images []string `json:"images"`
+	}
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+
+	for _, image := range input.Images {
+		image := &data.Image{
+			ListingID: listingId,
+			Url:       image,
+		}
+		err = app.models.Images.Insert(image)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+	}
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"message": "images uploaded successfully"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
