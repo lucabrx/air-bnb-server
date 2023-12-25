@@ -40,6 +40,7 @@ func (app *application) routes() *chi.Mux {
 	r.Route("/v1/listings", func(r chi.Router) {
 		r.Get("/user-listings", app.requireActivatedUser(app.getAllUserListingsHandler))
 		r.Get("/{listingId}", app.getListingHandler)
+		r.Get("/", app.getAllListingsHandler)
 		r.Post("/", app.requireActivatedUser(app.createListingHandler))
 		r.Delete("/delete/{listingId}", app.requireActivatedUser(app.deleteListingHandler))
 		r.Post("/{listingId}/images", app.requireActivatedUser(app.addImageToListingGalleryHandler))

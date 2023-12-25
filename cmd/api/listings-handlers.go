@@ -284,3 +284,46 @@ func (app *application) uploadImagesToListingHandler(w http.ResponseWriter, r *h
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) getAllListingsHandler(w http.ResponseWriter, r *http.Request) {
+
+	var meta struct {
+		data.Filters
+		Search string
+	}
+
+	v := validator.New()
+	qs := r.URL.Query()
+
+	meta.Filters.Sort = app.readString(qs, "sort", "-id")
+	meta.Filters.SortSafelist = []string{"id", "-id", "created_at", "-created_at", "title", "-title"}
+	meta.Filters.Page = app.readInt(qs, "page", 1, v)
+	meta.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	meta.Search = app.readString(qs, "search", "")
+
+	data.ValidateFilters(v, meta.Filters)
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	listings, metadata, err := app.models.Listings.GetAll(meta.Search, meta.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	for _, listing := range listings {
+		images, err := app.models.Images.GetForListing(listing.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		listing.Images = images
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"listings": listings, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

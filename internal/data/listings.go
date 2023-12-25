@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/air-bnb/internal/validator"
 	"github.com/jackc/pgx/v5"
 	"time"
@@ -217,4 +218,79 @@ func (m ListingsModel) Delete(id, ownerId int64) error {
 	}
 
 	return nil
+}
+
+func (m ListingsModel) GetAll(search string, filters Filters) ([]*Listing, Metadata, error) {
+	baseQuery := `SELECT count(*) OVER(), l.id, l.created_at, l.title, l.description, l.category, l.bedrooms,
+				 l.bathrooms, l.guests, l.location_flag, l.location_label, l.location_lat, l.location_lng,
+				 l.location_region, l.location_value, l.price, l.owner_id, u.name, COALESCE(u.image, '')
+				 FROM listings l INNER JOIN users u ON u.id = l.owner_id`
+
+	if search != "" {
+		baseQuery += ` WHERE (l.title ILIKE '%' || $3 || '%'
+ 					   OR l.category ILIKE '%' || $3 || '%'
+					   OR l.location_region ILIKE '%' || $3 || '%'
+					   OR l.location_label ILIKE '%' || $3 || '%')`
+	}
+
+	advQuery := fmt.Sprintf(` ORDER BY %s %s `, filters.sortColumn(), filters.sortDirection())
+
+	query := baseQuery + advQuery + ` LIMIT $1 OFFSET $2`
+
+	args := []interface{}{filters.limit(), filters.offset()}
+
+	if search != "" {
+		args = append(args, search)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+
+	totalRecords := 0
+	var listings []*Listing
+
+	for rows.Next() {
+		var listing Listing
+
+		err := rows.Scan(
+			&totalRecords,
+			&listing.ID,
+			&listing.CreatedAt,
+			&listing.Title,
+			&listing.Description,
+			&listing.Category,
+			&listing.Bedrooms,
+			&listing.Bathrooms,
+			&listing.Guests,
+			&listing.Location.Flag,
+			&listing.Location.Label,
+			&listing.Location.Lat,
+			&listing.Location.Lng,
+			&listing.Location.Region,
+			&listing.Location.Value,
+			&listing.Price,
+			&listing.OwnerID,
+			&listing.OwnerName,
+			&listing.OwnerPhoto,
+		)
+		if err = rows.Err(); err != nil {
+			return nil, Metadata{}, err
+		}
+
+		listings = append(listings, &listing)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return listings, metadata, nil
 }
