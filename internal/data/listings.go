@@ -159,6 +159,7 @@ func (m ListingsModel) AllUserListings(userID int64) ([]*Listing, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	var listings []*Listing

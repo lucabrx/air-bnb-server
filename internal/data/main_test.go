@@ -66,17 +66,25 @@ func CreateTokenForUser(t *testing.T, user User) Token {
 }
 
 func CreateRandomListing(t *testing.T, user User) Listing {
+	location := Location{
+		Flag:   "HR",
+		Lat:    23.5,
+		Lng:    23.5,
+		Label:  random.RandString(5),
+		Region: random.RandString(5),
+		Value:  random.RandString(5),
+	}
 	listing := Listing{
-		OwnerID:       user.ID,
-		OwnerName:     user.Name,
-		Title:         random.RandString(10),
-		Description:   random.RandString(10),
-		Category:      random.RandString(10),
-		RoomCount:     random.RandInt(1, 10),
-		BathroomCount: random.RandInt(1, 10),
-		GuestCount:    random.RandInt(1, 10),
-		Location:      random.RandString(10),
-		Price:         random.RandInt(1, 100),
+		OwnerID:     user.ID,
+		OwnerName:   user.Name,
+		Title:       random.RandString(10),
+		Description: random.RandString(10),
+		Category:    random.RandString(10),
+		Price:       random.RandInt(1, 100),
+		Guests:      random.RandInt(1, 10),
+		Bedrooms:    random.RandInt(1, 10),
+		Bathrooms:   random.RandInt(1, 10),
+		Location:    location,
 	}
 
 	err := testQueries.Listings.Insert(&listing)
