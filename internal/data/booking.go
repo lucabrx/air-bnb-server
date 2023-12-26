@@ -24,7 +24,7 @@ type Booking struct {
 	Listing   Listing   `json:"listing"`
 }
 
-func validateBooking(validator validator.Validator, booking *Booking) {
+func ValidateBooking(validator *validator.Validator, booking *Booking) {
 	validator.Check(booking.CheckIn.After(time.Now()), "checkIn", "must be a date in the future")
 	validator.Check(booking.CheckOut.After(booking.CheckIn), "checkOut", "must be after the check in date")
 	validator.Check(booking.Price > 0, "price", "must be greater than zero")
