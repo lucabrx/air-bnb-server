@@ -294,3 +294,45 @@ func (m ListingsModel) GetAll(search string, filters Filters) ([]*Listing, Metad
 
 	return listings, metadata, nil
 }
+
+func (m ListingsModel) Update(listing *Listing) error {
+	query := `UPDATE listings SET title = $1, description = $2, category = $3, bedrooms = $4,
+			  bathrooms = $5, guests = $6, location_flag = $7, location_label = $8, location_lat = $9,
+			  location_lng = $10, location_region = $11, location_value = $12, price = $13
+			  WHERE id = $14`
+
+	args := []interface{}{
+		listing.Title,
+		listing.Description,
+		listing.Category,
+		listing.Bedrooms,
+		listing.Bathrooms,
+		listing.Guests,
+		listing.Location.Flag,
+		listing.Location.Label,
+		listing.Location.Lat,
+		listing.Location.Lng,
+		listing.Location.Region,
+		listing.Location.Value,
+		listing.Price,
+		listing.ID,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := m.DB.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+}

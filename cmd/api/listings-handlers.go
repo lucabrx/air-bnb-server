@@ -247,7 +247,6 @@ func (app *application) removeImageFromListingGalleryHandler(w http.ResponseWrit
 }
 
 func (app *application) uploadImagesToListingHandler(w http.ResponseWriter, r *http.Request) {
-	// it will be []string
 	params := chi.URLParam(r, "listingId")
 	listingId, err := strconv.ParseInt(params, 10, 64)
 	if err != nil {
@@ -323,6 +322,57 @@ func (app *application) getAllListingsHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"listings": listings, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) updateListingHandler(w http.ResponseWriter, r *http.Request) {
+	params := chi.URLParam(r, "listingId")
+	id, err := strconv.ParseInt(params, 10, 64)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+	if id < 1 {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	var input struct {
+		Title       string  `json:"title"`
+		Description string  `json:"description"`
+		Price       float64 `json:"price"`
+	}
+
+	err = app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+	}
+
+	listing, err := app.models.Listings.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+
+		}
+		return
+	}
+
+	listing.Title = input.Title
+	listing.Description = input.Description
+	listing.Price = int64(input.Price)
+
+	err = app.models.Listings.Update(listing)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"listing": listing}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
