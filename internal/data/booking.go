@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/air-bnb/internal/validator"
 	"time"
 )
 
@@ -21,6 +22,15 @@ type Booking struct {
 	Price     int64     `json:"price"`
 	Total     int64     `json:"total"`
 	Listing   Listing   `json:"listing"`
+}
+
+func validateBooking(validator validator.Validator, booking *Booking) {
+	validator.Check(booking.CheckIn.After(time.Now()), "checkIn", "must be a date in the future")
+	validator.Check(booking.CheckOut.After(booking.CheckIn), "checkOut", "must be after the check in date")
+	validator.Check(booking.Price > 0, "price", "must be greater than zero")
+	validator.Check(booking.Total > 0, "total", "must be greater than zero")
+	total := booking.CheckOut.Sub(booking.CheckIn).Hours() / 24 * float64(booking.Price)
+	validator.Check(booking.Total == int64(total), "total", "does not match the price")
 }
 
 func (m BookingModel) Insert(booking *Booking) error {
