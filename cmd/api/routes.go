@@ -49,6 +49,14 @@ func (app *application) routes() *chi.Mux {
 		r.Post("/images/{listingId}", app.requireActivatedUser(app.uploadImagesToListingHandler))
 	})
 
+	r.Route("/v1/bookings", func(r chi.Router) {
+		r.Post("/", app.requireActivatedUser(app.createBookingHandler))
+		r.Get("/{id}", app.requireActivatedUser(app.getBookingHandler))
+		r.Delete("/{id}", app.requireActivatedUser(app.deleteBookingHandler))
+		r.Get("/user-bookings", app.requireActivatedUser(app.getUserBookingsHandler))
+		r.Get("/user-bookings/{id}", app.requireActivatedUser(app.getPropertyBookingsHandler))
+	})
+
 	r.Route("/v1/upload", func(r chi.Router) {
 		r.Post("/image", app.requireAuthenticatedUser(app.uploadImageHandler))
 	})
