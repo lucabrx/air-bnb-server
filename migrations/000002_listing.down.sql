@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS listings;
+DROP TABLE IF EXISTS images;
+DROP TABLE IF EXISTS bookings;

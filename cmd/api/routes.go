@@ -22,6 +22,8 @@ func (app *application) routes() *chi.Mux {
 		r.Post("/verify/{id}", app.verificationUserHandler)
 		r.Post("/login", app.loginUserHandler)
 		r.Delete("/logout", app.requireActivatedUser(app.logoutHandler))
+		r.Get("/github/login", app.githubLoginHandler)
+		r.Get("/github/callback", app.githubCallbackHandler)
 	})
 
 	r.Route("/v1/user", func(r chi.Router) {
@@ -33,6 +35,18 @@ func (app *application) routes() *chi.Mux {
 		r.Patch("/password", app.requireActivatedUser(app.updatePasswordHandler))
 		r.Post("/change-email", app.requireActivatedUser(app.changeEmailHandler))
 		r.Post("/change-email/verify/{email}", app.verifyChangeEmailHandler)
+	})
+
+	r.Route("/v1/listings", func(r chi.Router) {
+		r.Get("/user-listings", app.requireActivatedUser(app.getAllUserListingsHandler))
+		r.Get("/{listingId}", app.getListingHandler)
+		r.Get("/", app.getAllListingsHandler)
+		r.Post("/", app.requireActivatedUser(app.createListingHandler))
+		r.Patch("/{listingId}", app.requireActivatedUser(app.updateListingHandler))
+		r.Delete("/delete/{listingId}", app.requireActivatedUser(app.deleteListingHandler))
+		r.Post("/{listingId}/images", app.requireActivatedUser(app.addImageToListingGalleryHandler))
+		r.Delete("/images/{imageId}", app.requireActivatedUser(app.removeImageFromListingGalleryHandler))
+		r.Post("/images/{listingId}", app.requireActivatedUser(app.uploadImagesToListingHandler))
 	})
 
 	r.Route("/v1/upload", func(r chi.Router) {

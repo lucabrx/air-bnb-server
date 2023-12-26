@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/air-bnb/internal/validator"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -81,4 +84,26 @@ func (app *application) sessionCookie(value string, expires time.Time) *http.Coo
 		SameSite: http.SameSiteLaxMode,
 		Domain:   "localhost",
 	}
+}
+
+func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+
+	return s
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "Must be an integer value")
+		return defaultValue
+	}
+	return i
 }
