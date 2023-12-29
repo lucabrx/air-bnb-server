@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/air-bnb/internal/data"
 	"github.com/air-bnb/internal/validator"
 	"github.com/go-chi/chi/v5"
@@ -18,7 +19,6 @@ func (app *application) createBookingHandler(w http.ResponseWriter, r *http.Requ
 		StartDate time.Time `json:"startDate"`
 		EndDate   time.Time `json:"endDate"`
 		Pricing   int64     `json:"pricing"`
-		Total     int64     `json:"total"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -27,17 +27,20 @@ func (app *application) createBookingHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	total := input.Pricing * int64(input.EndDate.Sub(input.StartDate).Hours()/24)
+
 	booking := &data.Booking{
 		ListingID: input.ListingID,
 		GuestID:   session.ID,
 		CheckIn:   input.StartDate,
 		CheckOut:  input.EndDate,
 		Price:     input.Pricing,
-		Total:     input.Total,
+		Total:     total,
 	}
 
 	v := validator.New()
 	data.ValidateBooking(v, booking)
+	fmt.Println(v.Errors)
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
@@ -82,6 +85,7 @@ func (app *application) getBookingHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) deleteBookingHandler(w http.ResponseWriter, r *http.Request) {
+	session := app.contextGetUser(r)
 	params := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(params, 10, 64)
 	if err != nil || id < 1 {
@@ -89,7 +93,7 @@ func (app *application) deleteBookingHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = app.models.Bookings.Delete(id)
+	err = app.models.Bookings.Delete(id, session.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):

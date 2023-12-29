@@ -25,12 +25,8 @@ type Booking struct {
 }
 
 func ValidateBooking(validator *validator.Validator, booking *Booking) {
-	validator.Check(booking.CheckIn.After(time.Now()), "checkIn", "must be a date in the future")
-	validator.Check(booking.CheckOut.After(booking.CheckIn), "checkOut", "must be after the check in date")
 	validator.Check(booking.Price > 0, "price", "must be greater than zero")
 	validator.Check(booking.Total > 0, "total", "must be greater than zero")
-	total := booking.CheckOut.Sub(booking.CheckIn).Hours() / 24 * float64(booking.Price)
-	validator.Check(booking.Total == int64(total), "total", "does not match the price")
 }
 
 func (m BookingModel) Insert(booking *Booking) error {
@@ -104,13 +100,13 @@ func (m BookingModel) Get(id int64) (*Booking, error) {
 	return &booking, nil
 }
 
-func (m BookingModel) Delete(id int64) error {
-	query := `DELETE FROM bookings WHERE id = $1`
+func (m BookingModel) Delete(id, guestId int64) error {
+	query := `DELETE FROM bookings WHERE id = $1 AND guest_id = $2`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := m.DB.ExecContext(ctx, query, id)
+	_, err := m.DB.ExecContext(ctx, query, id, guestId)
 	if err != nil {
 		return err
 	}
