@@ -46,7 +46,7 @@ func TestBookingModel_Delete(t *testing.T) {
 	err := testQueries.Bookings.Insert(booking)
 	require.NoError(t, err)
 
-	err = testQueries.Bookings.Delete(booking.ID)
+	err = testQueries.Bookings.Delete(booking.ID, user.ID)
 	require.NoError(t, err)
 }
 
