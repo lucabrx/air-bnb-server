@@ -17,6 +17,7 @@ type Models struct {
 	Tokens   TokenModel
 	Listings ListingsModel
 	Images   ImageModel
+	Bookings BookingModel
 }
 
 func NewModels(db *sql.DB) Models {
@@ -25,6 +26,7 @@ func NewModels(db *sql.DB) Models {
 		Tokens:   TokenModel{DB: db},
 		Listings: ListingsModel{DB: db},
 		Images:   ImageModel{DB: db},
+		Bookings: BookingModel{DB: db},
 	}
 }
 
