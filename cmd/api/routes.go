@@ -24,6 +24,8 @@ func (app *application) routes() *chi.Mux {
 		r.Delete("/logout", app.requireActivatedUser(app.logoutHandler))
 		r.Get("/github/login", app.githubLoginHandler)
 		r.Get("/github/callback", app.githubCallbackHandler)
+		r.Get("/google/login", app.googleLoginHandler)
+		r.Get("/google/callback", app.googleCallbackHandler)
 	})
 
 	r.Route("/v1/user", func(r chi.Router) {

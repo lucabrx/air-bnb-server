@@ -318,3 +318,86 @@ func (app *application) githubCallbackHandler(w http.ResponseWriter, r *http.Req
 
 	http.Redirect(w, r, "http://localhost:3000", http.StatusTemporaryRedirect)
 }
+
+func (app *application) googleLoginHandler(w http.ResponseWriter, r *http.Request) {
+	session := app.contextGetUser(r)
+
+	if !session.IsAnonymous() {
+		app.alreadyHaveSessionResponse(w, r)
+		return
+	}
+
+	url := app.googleConfig().AuthCodeURL("state", oauth2.AccessTypeOffline)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func (app *application) googleCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	session := app.contextGetUser(r)
+
+	if !session.IsAnonymous() {
+		app.alreadyHaveSessionResponse(w, r)
+		return
+	}
+
+	code := r.URL.Query().Get("code")
+	token, err := app.googleConfig().Exchange(r.Context(), code)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	client := app.googleConfig().Client(context.Background(), token)
+
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo?fields=email,name,picture")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var userDetails struct {
+		Name      string `json:"name"`
+		Email     string `json:"email"`
+		AvatarURL string `json:"picture"`
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	if err := json.Unmarshal(body, &userDetails); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	user := &data.User{
+		Name:      userDetails.Name,
+		Email:     userDetails.Email,
+		Image:     userDetails.AvatarURL,
+		Activated: true,
+	}
+
+	dbUser, err := app.models.Users.Get(0, user.Email)
+	if dbUser == nil {
+		err = app.models.Users.Insert(user)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+	} else {
+		user.ID = dbUser.ID
+	}
+
+	sessionToken, err := app.models.Tokens.New(user.ID, 24*time.Hour, data.ScopeAuthentication)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	cookie := app.sessionCookie(sessionToken.Plaintext, token.Expiry)
+	http.SetCookie(w, cookie)
+
+	http.Redirect(w, r, "http://localhost:3000", http.StatusTemporaryRedirect)
+}
