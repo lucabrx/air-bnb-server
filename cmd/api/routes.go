@@ -54,7 +54,7 @@ func (app *application) routes() *chi.Mux {
 		r.Get("/{id}", app.requireActivatedUser(app.getBookingHandler))
 		r.Delete("/{id}", app.requireActivatedUser(app.deleteBookingHandler))
 		r.Get("/user-bookings", app.requireActivatedUser(app.getUserBookingsHandler))
-		r.Get("/user-bookings/{id}", app.requireActivatedUser(app.getPropertyBookingsHandler))
+		r.Get("/property-bookings/{id}", app.requireActivatedUser(app.getPropertyBookingsHandler))
 	})
 
 	r.Route("/v1/upload", func(r chi.Router) {
